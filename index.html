@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1114">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Last Round</title>
+<style>
+:root{
+  --bg:#f4f5f7;--card:#ffffff;--text:#14171c;--muted:#6b7280;--line:#e3e6ea;
+  --accent:#d97a1e;--accent-press:#b8620f;--accent-text:#ffffff;--bar:#d97a1e;--bar-today:#14171c;--warn:#b42318;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1114;--card:#181b20;--text:#f1f2f4;--muted:#8b919a;--line:#2a2e35;
+    --accent:#e8892b;--accent-press:#c8701a;--accent-text:#111;--bar:#e8892b;--bar-today:#f1f2f4;--warn:#f97066;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1114;--card:#181b20;--text:#f1f2f4;--muted:#8b919a;--line:#2a2e35;
+  --accent:#e8892b;--accent-press:#c8701a;--accent-text:#111;--bar:#e8892b;--bar-today:#f1f2f4;--warn:#f97066;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;
+  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.view{display:none;flex:1;flex-direction:column}
+.view.on{display:flex}
+.clock{text-align:center;margin-top:8px}
+.clock .date{font-size:15px;color:var(--muted)}
+.clock .time{font-size:40px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.counts{text-align:center;margin-top:28px}
+.counts .today{font-size:88px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.counts .lbl{font-size:14px;color:var(--muted);margin-top:6px}
+.counts .yday{font-size:17px;color:var(--muted);margin-top:14px}
+.counts .yday b{color:var(--text);font-variant-numeric:tabular-nums}
+.btnzone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px 0}
+.big{width:min(68vw,250px);aspect-ratio:1;border-radius:50%;border:0;background:var(--accent);color:var(--accent-text);
+  font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.18);transition:transform .08s,background .08s;touch-action:manipulation}
+.big:active{transform:scale(.96);background:var(--accent-press)}
+.big:disabled{opacity:.5}
+.big small{display:block;font-size:14px;font-weight:500;opacity:.85;margin-top:4px}
+.hint{min-height:20px;font-size:14px;text-align:center;color:var(--muted)}
+.hint.warn{color:var(--warn);font-weight:600}
+.row{display:flex;gap:10px}
+.sec{flex:1;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:16px;font-weight:600;cursor:pointer}
+.sec.small{flex:0 0 auto;font-weight:500;color:var(--muted)}
+.sec:disabled{opacity:.4}
+.status{text-align:center;font-size:12px;color:var(--muted);margin-top:10px;min-height:16px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+header h1{font-size:20px;margin:0;flex:1}
+.back{border:0;background:none;color:var(--text);font-size:16px;padding:8px 4px;cursor:pointer}
+.ranges{display:flex;gap:8px;margin-bottom:14px}
+.ranges button{flex:1;padding:10px 0;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:15px;cursor:pointer}
+.ranges button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 10px 8px}
+svg{display:block;width:100%;height:auto}
+svg text{fill:var(--muted);font-size:11px;font-family:inherit}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.stat .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .k{font-size:12px;color:var(--muted);margin-top:2px}
+.list{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.list div{display:flex;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--line);font-size:15px}
+.list div:first-child{border-top:0}
+.list span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <section class="view on" id="home">
+    <div class="clock"><div class="date" id="date"></div><div class="time" id="time"></div></div>
+    <div class="counts">
+      <div class="today" id="today">0</div>
+      <div class="lbl">Sprühstöße heute</div>
+      <div class="yday">Gestern: <b id="yday">0</b></div>
+    </div>
+    <div class="btnzone">
+      <button class="big" id="spray">Sprühstoß<small>+1</small></button>
+      <div class="hint" id="hint"></div>
+    </div>
+    <div class="row">
+      <button class="sec" id="toCal">Kalender</button>
+      <button class="sec small" id="undo" disabled>Rückgängig</button>
+    </div>
+    <div class="status" id="status">Lädt…</div>
+  </section>
+
+  <section class="view" id="cal">
+    <header><button class="back" id="back">‹ Zurück</button><h1>Verlauf</h1></header>
+    <div class="ranges" id="ranges">
+      <button data-d="14" class="on">14 Tage</button>
+      <button data-d="30">30 Tage</button>
+      <button data-d="90">90 Tage</button>
+    </div>
+    <div class="card"><svg id="chart" viewBox="0 0 340 220" role="img" aria-label="Sprühstöße pro Tag"></svg></div>
+    <div class="stats">
+      <div class="stat"><div class="v" id="sAvg">0</div><div class="k">Ø pro Tag</div></div>
+      <div class="stat"><div class="v" id="sMax">0</div><div class="k">Höchster Tag</div></div>
+      <div class="stat"><div class="v" id="sSum">0</div><div class="k">Gesamt</div></div>
+    </div>
+    <div class="list" id="list"></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const LS_KEY = "spray-tracker-v1";
+  let days = {};            // "YYYY-MM-DD" -> [ISO strings]
+  const col = null;
+  let range = 14;
+  let writing = Promise.resolve();
+
+  const pad = n => String(n).padStart(2, "0");
+  const key = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const shift = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const count = k => (days[k] || []).length;
+
+  function loadLocal() {
+    try { const s = localStorage.getItem(LS_KEY); if (s) days = JSON.parse(s) || {}; } catch (e) {}
+  }
+  function saveLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(days)); } catch (e) {}
+  }
+
+  // ---- clock ----
+  function tick() {
+    const now = new Date();
+    $("date").textContent = now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    $("time").textContent = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    if ($("cal").classList.contains("on")) return;
+    renderHome();
+  }
+
+  // ---- home ----
+  function renderHome() {
+    const now = new Date();
+    const tk = key(now);
+    $("today").textContent = count(tk);
+    $("yday").textContent = count(key(shift(now, -1)));
+    $("undo").disabled = count(tk) === 0;
+
+    const all = (days[tk] || []).concat(days[key(shift(now, -1))] || []).map(s => new Date(s).getTime());
+    const t = now.getTime();
+    const lastHour = all.filter(x => t - x < 3600e3).length;
+    const last5 = all.filter(x => t - x < 5 * 60e3).length;
+    const h = $("hint");
+    if (last5 >= 3) { h.textContent = last5 + " Stöße in 5 Minuten (Packung: max. 2 auf einmal)"; h.className = "hint warn"; }
+    else if (lastHour > 4) { h.textContent = lastHour + " Stöße in der letzten Stunde (Packung: max. 4/Std.)"; h.className = "hint warn"; }
+    else if (all.length) {
+      const last = Math.max(...all);
+      const min = Math.round((t - last) / 60000);
+      h.textContent = "Letzter: vor " + (min < 1 ? "weniger als 1 Min." : min < 60 ? min + " Min." : Math.floor(min / 60) + " Std. " + (min % 60) + " Min.") + " · letzte Std.: " + lastHour;
+      h.className = "hint";
+    } else { h.textContent = ""; h.className = "hint"; }
+  }
+
+  // ---- writes ----
+  function persist(k) {
+    saveLocal();
+    if (!col) return;
+    const body = { times: (days[k] || []).slice() };
+    writing = writing.then(() => col.doc(k).set(body)).then(() => {
+      $("status").textContent = "Gespeichert";
+    }).catch(e => {
+      $("status").textContent = e && e.code === "quota_exceeded" ? "Speicher voll, nur lokal gespeichert" : "Nur lokal gespeichert (Sync fehlgeschlagen)";
+    });
+  }
+
+  $("spray").addEventListener("click", () => {
+    const now = new Date();
+    const k = key(now);
+    days[k] = (days[k] || []).concat(now.toISOString());
+    if (navigator.vibrate) { try { navigator.vibrate(30); } catch (e) {} }
+    renderHome();
+    persist(k);
+  });
+
+  $("undo").addEventListener("click", () => {
+    const k = key(new Date());
+    if (!count(k)) return;
+    days[k] = days[k].slice(0, -1);
+    renderHome();
+    persist(k);
+  });
+
+  // ---- calendar ----
+  $("toCal").addEventListener("click", () => { $("home").classList.remove("on"); $("cal").classList.add("on"); renderChart(); window.scrollTo(0, 0); });
+  $("back").addEventListener("click", () => { $("cal").classList.remove("on"); $("home").classList.add("on"); renderHome(); });
+  $("ranges").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    range = +b.dataset.d;
+    [...$("ranges").children].forEach(x => x.classList.toggle("on", x === b));
+    renderChart();
+  });
+
+  function niceMax(m) {
+    if (m <= 5) return 5;
+    const steps = [10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 120, 150, 200];
+    return steps.find(s => s >= m) || Math.ceil(m / 50) * 50;
+  }
+
+  function renderChart() {
+    const now = new Date();
+    const pts = [];
+    for (let i = range - 1; i >= 0; i--) { const d = shift(now, -i); pts.push({ d, k: key(d), v: count(key(d)) }); }
+    const max = niceMax(Math.max(0, ...pts.map(p => p.v)));
+    const W = 340, H = 220, L = 30, R = 6, T = 10, B = 34;
+    const cw = W - L - R, ch = H - T - B;
+    const bw = cw / pts.length;
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = $("chart");
+    svg.textContent = "";
+    const mk = (tag, attrs, txt) => { const el = document.createElementNS(ns, tag); for (const a in attrs) el.setAttribute(a, attrs[a]); if (txt != null) el.textContent = txt; svg.appendChild(el); return el; };
+
+    // y grid + labels
+    for (let i = 0; i <= 4; i++) {
+      const v = Math.round(max * i / 4), y = T + ch - ch * i / 4;
+      mk("line", { x1: L, x2: W - R, y1: y, y2: y, stroke: "var(--line)", "stroke-width": 1 });
+      mk("text", { x: L - 6, y: y + 4, "text-anchor": "end" }, v);
+    }
+    // bars
+    const gap = Math.max(1, bw * 0.22);
+    pts.forEach((p, i) => {
+      const h = max ? ch * p.v / max : 0;
+      const x = L + i * bw + gap / 2;
+      const isToday = i === pts.length - 1;
+      if (p.v > 0) {
+        const r = mk("rect", { x, y: T + ch - h, width: Math.max(1, bw - gap), height: h, rx: Math.min(3, (bw - gap) / 2), fill: isToday ? "var(--bar-today)" : "var(--bar)" });
+        const tt = document.createElementNS(ns, "title");
+        tt.textContent = p.d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" }) + ": " + p.v;
+        r.appendChild(tt);
+        if (range === 14) mk("text", { x: x + (bw - gap) / 2, y: T + ch - h - 4, "text-anchor": "middle", style: "fill:var(--text);font-weight:600" }, p.v);
+      }
+    });
+    // x labels
+    const every = range === 14 ? 2 : range === 30 ? 5 : 14;
+    pts.forEach((p, i) => {
+      if ((pts.length - 1 - i) % every !== 0) return;
+      mk("text", { x: L + i * bw + bw / 2, y: H - B + 16, "text-anchor": "middle" }, p.d.getDate() + "." + (p.d.getMonth() + 1) + ".");
+    });
+    mk("line", { x1: L, x2: W - R, y1: T + ch, y2: T + ch, stroke: "var(--muted)", "stroke-width": 1 });
+
+    // stats (days with data within the range, but average over all days of range)
+    const sum = pts.reduce((a, p) => a + p.v, 0);
+    $("sSum").textContent = sum;
+    $("sMax").textContent = Math.max(0, ...pts.map(p => p.v));
+    $("sAvg").textContent = (sum / pts.length).toFixed(1).replace(".", ",");
+
+    // list, newest first
+    const list = $("list"); list.textContent = "";
+    pts.slice().reverse().forEach(p => {
+      const row = document.createElement("div");
+      const a = document.createElement("span"); a.textContent = p.d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+      const b = document.createElement("span"); b.textContent = p.v;
+      row.append(a, b); list.appendChild(row);
+    });
+  }
+
+  // ---- init ----
+  loadLocal();
+  tick();
+  setInterval(tick, 1000);
+
+  $("status").textContent = "Daten liegen nur auf diesem Gerät";
+  if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").catch(() => {}); }
+})();
+</script>
+</body>
+</html>
